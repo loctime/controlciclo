@@ -269,6 +269,9 @@ export function CalendarView() {
     }
   }
 
+  // Debug info para desarrollo
+  const showDebugInfo = process.env.NODE_ENV === 'development'
+
   if (showStatistics) {
     return <StatisticsView onClose={() => setShowStatistics(false)} />
   }
@@ -291,11 +294,28 @@ export function CalendarView() {
             )}
           </div>
           <div className="flex gap-2">
-            {!isInstalled && isInstallable && (
-              <Button variant="outline" size="icon" onClick={handleInstallPWA} title="Instalar App">
-                <Download className="h-4 w-4" />
+            {/* Botón de instalación PWA */}
+            {!isInstalled && (isInstallable || showDebugInfo) && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleInstallPWA}
+                className="bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+                title={isInstallable ? "Instalar App" : "PWA no disponible (modo debug)"}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Instalar App
               </Button>
             )}
+            
+            {/* Debug info en desarrollo */}
+            {showDebugInfo && (
+              <div className="text-xs text-muted-foreground">
+                PWA: {isInstallable ? 'Instalable' : 'No instalable'} | 
+                Instalada: {isInstalled ? 'Sí' : 'No'}
+              </div>
+            )}
+            
             <Button variant="outline" size="icon" onClick={() => setShowStatistics(true)}>
               <TrendingUp className="h-4 w-4" />
             </Button>

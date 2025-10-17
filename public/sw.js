@@ -4,7 +4,9 @@ const DYNAMIC_CACHE = "controlciclo-dynamic-v1.0.0"
 
 const urlsToCache = [
   "/",
-  "/manifest.json"
+  "/manifest.json",
+  "/icon-192.svg",
+  "/icon-512.svg"
 ]
 
 // Instalar Service Worker
