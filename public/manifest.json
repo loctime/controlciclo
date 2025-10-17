@@ -1,0 +1,12 @@
+{
+  "name": "ControlCiclo - Tu Compañera Personal de Periodo",
+  "short_name": "ControlCiclo",
+  "description": "Rastrea tu ciclo menstrual, registra síntomas y obtén predicciones personalizadas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ec4899",
+  "orientation": "portrait",
+  "icons": []
+}
+

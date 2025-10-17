@@ -16,10 +16,39 @@ Una aplicación web moderna y minimalista para el seguimiento del ciclo menstrua
 - 📊 **Estadísticas**: Visualiza tendencias y patrones de tu ciclo
 - ⚙️ **Personalización**: Configura la duración de tu ciclo y periodo
 - 🌙 **Modo Oscuro**: Soporte completo para tema claro/oscuro
-- 📱 **Diseño Responsive**: Optimizado para móvil y escritorio
-- 💾 **Almacenamiento Local**: Tus datos se guardan de forma segura en tu navegador
+- 📱 **PWA (Progressive Web App)**: Instálala como app nativa en tu dispositivo
+- 🔄 **Sincronización en la Nube**: Accede a tus datos desde cualquier dispositivo
+- 🔐 **Autenticación con Google**: Login seguro y rápido
+- ☁️ **Firebase Backend**: Almacenamiento seguro en Firestore
 
-## 🚀 Inicio Rápido
+## 📱 Instalación como PWA (Usuarios)
+
+ControlCiclo es una **Progressive Web App (PWA)** que puedes instalar en tu dispositivo:
+
+### En Móvil (Android/iOS):
+
+1. Abre https://controlciclo.vercel.app en tu navegador (Chrome, Safari, etc.)
+2. Busca el botón **"Instalar App"** (icono de descarga ⬇️) en el header
+3. O usa el menú del navegador → "Agregar a pantalla de inicio"
+4. ¡Listo! Ahora puedes usar ControlCiclo como una app nativa
+
+### En Escritorio (Chrome/Edge):
+
+1. Abre la app en tu navegador
+2. Busca el icono de instalación en la barra de direcciones
+3. Haz clic en **"Instalar"**
+4. La app se abrirá en su propia ventana
+
+### Beneficios de la PWA:
+
+- ✅ Funciona offline (con datos en cache)
+- ✅ Acceso rápido desde tu pantalla de inicio
+- ✅ Experiencia similar a una app nativa
+- ✅ Actualizaciones automáticas
+- ✅ Sin necesidad de App Store o Play Store
+- ✅ Notificaciones push (próximamente)
+
+## 🚀 Inicio Rápido (Desarrolladores)
 
 ### Prerequisitos
 
@@ -65,12 +94,39 @@ cd controlciclo
 pnpm install
 ```
 
-3. **Inicia el servidor de desarrollo**:
+3. **Configura las variables de entorno**:
+
+Crea un archivo `.env.local` en la raíz del proyecto:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=tu-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=tu-auth-domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=tu-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=tu-storage-bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tu-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=tu-app-id
+```
+
+4. **Configura Firebase**:
+   - Crea un proyecto en [Firebase Console](https://console.firebase.google.com/)
+   - Habilita **Authentication** → **Google Sign-In**
+   - Habilita **Firestore Database**
+   - Configura las reglas de Firestore (ver [`FIRESTORE-RULES.md`](./FIRESTORE-RULES.md))
+
+5. **Genera los iconos PWA** (Opcional):
+   - Para habilitar la instalación PWA completa, crea iconos en `public/`:
+     - `icon-192.png` (192x192 píxeles)
+     - `icon-512.png` (512x512 píxeles)
+     - `favicon.ico`
+   - Luego actualiza `public/manifest.json` para incluir los iconos
+   - **Nota**: La app funciona sin iconos, pero no será completamente instalable como PWA
+
+6. **Inicia el servidor de desarrollo**:
 ```bash
 pnpm dev
 ```
 
-4. **Abre tu navegador** en [http://localhost:3000](http://localhost:3000)
+7. **Abre tu navegador** en [http://localhost:3000](http://localhost:3000)
 
 ¡Listo! La aplicación debería estar funcionando.
 
@@ -187,14 +243,16 @@ Los datos se almacenan de forma segura en **Firestore** (base de datos en la nub
 
 > **Nota**: Solo tú puedes acceder a tus datos. Se requiere autenticación con Google.
 
-## 🔒 Privacidad
+## 🔒 Privacidad y Seguridad
 
 Esta aplicación respeta completamente tu privacidad:
-- ✅ **Autenticación segura** - Solo necesitas tu cuenta de Google
+- ✅ **Autenticación segura** - Login con Google OAuth 2.0
 - ✅ **Datos encriptados** - Tu información se almacena de forma segura en Firestore
-- ✅ **Sin tracking** - No rastreamos tu actividad
-- ✅ **Acceso privado** - Solo tú puedes ver tus datos
-- ✅ **Sincronización segura** - Tus datos se sincronizan solo en tus dispositivos
+- ✅ **Sin tracking** - No rastreamos tu actividad personal
+- ✅ **Acceso privado** - Solo tú puedes ver tus datos (reglas de seguridad de Firestore)
+- ✅ **Sincronización segura** - Datos sincronizados solo en tus dispositivos autenticados
+- ✅ **PWA Segura** - Service Worker y HTTPS requeridos
+- ✅ **Sin terceros** - No compartimos datos con nadie
 
 ## 🌐 Despliegue
 

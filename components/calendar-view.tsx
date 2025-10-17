@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, Plus, Settings, TrendingUp } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Settings, TrendingUp, Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SymptomLogModal, type SymptomLog } from "@/components/symptom-log-modal"
 import { StatisticsView } from "@/components/statistics-view"
 import { SettingsView } from "@/components/settings-view"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "./auth-provider"
+import { usePWAInstall } from "@/hooks/use-pwa-install"
 import { 
   subscribeToUserData, 
   subscribeToSymptomLogs, 
@@ -27,6 +28,7 @@ interface PeriodLog {
 export function CalendarView() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { isInstallable, isInstalled, installPWA } = usePWAInstall()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [userData, setUserData] = useState<UserData | null>(null)
   const [periodLogs, setPeriodLogs] = useState<PeriodLog[]>([])
@@ -257,6 +259,16 @@ export function CalendarView() {
     }
   }
 
+  const handleInstallPWA = async () => {
+    const installed = await installPWA()
+    if (installed) {
+      toast({
+        title: "¡App instalada!",
+        description: "ControlCiclo se ha instalado en tu dispositivo.",
+      })
+    }
+  }
+
   if (showStatistics) {
     return <StatisticsView onClose={() => setShowStatistics(false)} />
   }
@@ -279,6 +291,11 @@ export function CalendarView() {
             )}
           </div>
           <div className="flex gap-2">
+            {!isInstalled && isInstallable && (
+              <Button variant="outline" size="icon" onClick={handleInstallPWA} title="Instalar App">
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
             <Button variant="outline" size="icon" onClick={() => setShowStatistics(true)}>
               <TrendingUp className="h-4 w-4" />
             </Button>
