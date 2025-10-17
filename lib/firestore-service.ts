@@ -71,7 +71,7 @@ export async function savePeriodLog(userId: string, log: PeriodLog): Promise<str
   return docRef.id
 }
 
-export async function getPeriodLogs(userId: string): Promise<PeriodLog[]> {
+export async function getPeriodLogs(userId: string): Promise<(PeriodLog & { id: string })[]> {
   const logsRef = collection(db, 'apps', 'controlciclo', 'users', userId, 'periodLogs')
   const q = query(logsRef, orderBy('startDate', 'desc'))
   const querySnapshot = await getDocs(q)
@@ -102,7 +102,7 @@ export async function saveSymptomLog(userId: string, log: SymptomLog): Promise<s
   return docRef.id
 }
 
-export async function getSymptomLogs(userId: string): Promise<SymptomLog[]> {
+export async function getSymptomLogs(userId: string): Promise<(SymptomLog & { id: string })[]> {
   const logsRef = collection(db, 'apps', 'controlciclo', 'users', userId, 'symptomLogs')
   const q = query(logsRef, orderBy('date', 'desc'))
   const querySnapshot = await getDocs(q)
