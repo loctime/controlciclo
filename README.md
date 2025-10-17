@@ -145,27 +145,30 @@ controlciclo/
 
 ## 🎨 Características Principales
 
-### 1. Bienvenida Inicial
-Al abrir la aplicación por primera vez, se te guiará a través de un proceso de configuración donde podrás:
+### 1. Autenticación
+Al abrir la aplicación por primera vez, necesitarás iniciar sesión con tu cuenta de Google para acceder a tus datos.
+
+### 2. Bienvenida Inicial
+Una vez autenticada, se te guiará a través de un proceso de configuración donde podrás:
 - Ingresar la fecha de tu último periodo
 - Configurar la duración promedio de tu ciclo
 - Establecer la duración promedio de tu periodo
 
-### 2. Vista de Calendario
+### 3. Vista de Calendario
 El calendario muestra:
 - **Días de periodo** (marcados en color primario)
 - **Periodos predichos** (marcados en color primario translúcido)
 - **Ventana fértil** (marcados en color secundario)
 - **Día actual** (con un anillo alrededor)
 
-### 3. Registro de Síntomas
+### 4. Registro de Síntomas
 Puedes registrar:
 - Síntomas físicos (dolores, fatiga, etc.)
 - Estado de ánimo
 - Flujo
 - Notas adicionales
 
-### 4. Estadísticas
+### 5. Estadísticas
 Visualiza:
 - Duración promedio del ciclo
 - Patrones de síntomas
@@ -173,22 +176,25 @@ Visualiza:
 
 ## 💾 Almacenamiento de Datos
 
-Los datos se almacenan localmente en el navegador usando `localStorage`:
+Los datos se almacenan de forma segura en **Firestore** (base de datos en la nube de Google):
 
-- `period_tracker_onboarded` - Estado de onboarding
-- `period_tracker_user_data` - Configuración del usuario
-- `period_tracker_logs` - Registros de periodos
-- `period_tracker_symptom_logs` - Registros de síntomas
+- **Autenticación**: Requiere cuenta de Google para acceder
+- **Sincronización**: Tus datos se sincronizan automáticamente entre todos tus dispositivos
+- **Estructura**: `apps/controlciclo/users/{userId}/data/`
+  - `userData` - Configuración del usuario (ciclo, periodo, última fecha)
+  - `periodLogs` - Registros de periodos
+  - `symptomLogs` - Registros de síntomas y estado de ánimo
 
-> **Nota**: Los datos son completamente privados y nunca salen de tu dispositivo.
+> **Nota**: Solo tú puedes acceder a tus datos. Se requiere autenticación con Google.
 
 ## 🔒 Privacidad
 
 Esta aplicación respeta completamente tu privacidad:
-- ✅ **Sin registro de cuenta** - No necesitas crear una cuenta
-- ✅ **Sin servidor** - Todo se ejecuta en tu navegador
+- ✅ **Autenticación segura** - Solo necesitas tu cuenta de Google
+- ✅ **Datos encriptados** - Tu información se almacena de forma segura en Firestore
 - ✅ **Sin tracking** - No rastreamos tu actividad
-- ✅ **Datos locales** - Tu información nunca sale de tu dispositivo
+- ✅ **Acceso privado** - Solo tú puedes ver tus datos
+- ✅ **Sincronización segura** - Tus datos se sincronizan solo en tus dispositivos
 
 ## 🌐 Despliegue
 

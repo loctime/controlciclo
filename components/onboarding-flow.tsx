@@ -7,27 +7,60 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react"
+import { useAuth } from "./auth-provider"
+import { saveUserData, type UserData } from "@/lib/firestore-service"
+import { useToast } from "@/hooks/use-toast"
 
 interface OnboardingFlowProps {
   onComplete: () => void
 }
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+  const { user } = useAuth()
+  const { toast } = useToast()
   const [step, setStep] = useState(1)
   const [cycleLength, setCycleLength] = useState("28")
   const [periodLength, setPeriodLength] = useState("5")
   const [lastPeriodDate, setLastPeriodDate] = useState<Date | undefined>(undefined)
+  const [isSaving, setIsSaving] = useState(false)
 
-  const handleComplete = () => {
-    // Save user data to localStorage
-    const userData = {
-      cycleLength: Number.parseInt(cycleLength),
-      periodLength: Number.parseInt(periodLength),
-      lastPeriodDate: lastPeriodDate?.toISOString(),
-      setupDate: new Date().toISOString(),
+  const handleComplete = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "No hay usuario autenticado",
+        variant: "destructive",
+      })
+      return
     }
-    localStorage.setItem("period_tracker_user_data", JSON.stringify(userData))
-    onComplete()
+
+    setIsSaving(true)
+    try {
+      const userData: UserData = {
+        cycleLength: Number.parseInt(cycleLength),
+        periodLength: Number.parseInt(periodLength),
+        lastPeriodDate: lastPeriodDate?.toISOString() || new Date().toISOString(),
+        setupDate: new Date().toISOString(),
+      }
+      
+      await saveUserData(user.uid, userData)
+      
+      toast({
+        title: "¡Configuración guardada!",
+        description: "Tu información se ha guardado exitosamente.",
+      })
+      
+      onComplete()
+    } catch (error) {
+      console.error('Error saving user data:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la configuración. Inténtalo de nuevo.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const canProceedStep1 = cycleLength && Number.parseInt(cycleLength) >= 21 && Number.parseInt(cycleLength) <= 35
@@ -137,9 +170,18 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={handleComplete} disabled={!canProceedStep3} className="flex-1">
-                Comenzar
-                <Sparkles className="ml-2 h-4 w-4" />
+              <Button onClick={handleComplete} disabled={!canProceedStep3 || isSaving} className="flex-1">
+                {isSaving ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    Comenzar
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             )}
           </div>

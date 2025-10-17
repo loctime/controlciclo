@@ -16,38 +16,58 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { X, Save, Trash2, Shield, Calendar, Info } from "lucide-react"
+import { X, Save, Trash2, Shield, Calendar, Info, LogOut } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-
-interface UserData {
-  cycleLength: number
-  periodLength: number
-  lastPeriodDate: string
-  setupDate: string
-}
+import { useAuth } from "./auth-provider"
+import { 
+  getUserData, 
+  updateUserSettings, 
+  deleteAllUserData, 
+  exportUserData,
+  type UserData 
+} from "@/lib/firestore-service"
 
 interface SettingsViewProps {
   onClose: () => void
 }
 
 export function SettingsView({ onClose }: SettingsViewProps) {
+  const { user, signOut } = useAuth()
+  const { toast } = useToast()
   const [userData, setUserData] = useState<UserData | null>(null)
   const [cycleLength, setCycleLength] = useState("")
   const [periodLength, setPeriodLength] = useState("")
-  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    const data = localStorage.getItem("period_tracker_user_data")
-    if (data) {
-      const parsed = JSON.parse(data)
-      setUserData(parsed)
-      setCycleLength(parsed.cycleLength.toString())
-      setPeriodLength(parsed.periodLength.toString())
-    }
-  }, [])
+    const loadUserData = async () => {
+      if (!user) return
 
-  const handleSaveSettings = () => {
-    if (!userData) return
+      try {
+        const data = await getUserData(user.uid)
+        if (data) {
+          setUserData(data)
+          setCycleLength(data.cycleLength.toString())
+          setPeriodLength(data.periodLength.toString())
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los datos del usuario",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadUserData()
+  }, [user, toast])
+
+  const handleSaveSettings = async () => {
+    if (!user || !userData) return
 
     const cycleLengthNum = Number.parseInt(cycleLength)
     const periodLengthNum = Number.parseInt(periodLength)
@@ -70,61 +90,104 @@ export function SettingsView({ onClose }: SettingsViewProps) {
       return
     }
 
-    const updatedData = {
-      ...userData,
-      cycleLength: cycleLengthNum,
-      periodLength: periodLengthNum,
+    setIsSaving(true)
+    try {
+      await updateUserSettings(user.uid, {
+        cycleLength: cycleLengthNum,
+        periodLength: periodLengthNum,
+      })
+
+      setUserData(prev => prev ? {
+        ...prev,
+        cycleLength: cycleLengthNum,
+        periodLength: periodLengthNum,
+      } : null)
+
+      toast({
+        title: "Configuración guardada",
+        description: "Tu configuración de ciclo se ha actualizado exitosamente.",
+      })
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la configuración. Inténtalo de nuevo.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
     }
-
-    localStorage.setItem("period_tracker_user_data", JSON.stringify(updatedData))
-    setUserData(updatedData)
-
-    toast({
-      title: "Configuración guardada",
-      description: "Tu configuración de ciclo se ha actualizado exitosamente.",
-    })
   }
 
-  const handleDeleteAllData = () => {
-    localStorage.removeItem("period_tracker_user_data")
-    localStorage.removeItem("period_tracker_logs")
-    localStorage.removeItem("period_tracker_symptom_logs")
-    localStorage.removeItem("period_tracker_onboarded")
+  const handleDeleteAllData = async () => {
+    if (!user) return
 
-    toast({
-      title: "Datos eliminados",
-      description: "Todos tus datos han sido eliminados permanentemente.",
-    })
+    try {
+      await deleteAllUserData(user.uid)
+      toast({
+        title: "Datos eliminados",
+        description: "Todos tus datos han sido eliminados permanentemente.",
+      })
 
-    // Reload the page to restart onboarding
-    setTimeout(() => {
-      window.location.reload()
-    }, 1000)
+      // Reload the page to restart onboarding
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } catch (error) {
+      console.error('Error deleting data:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron eliminar los datos. Inténtalo de nuevo.",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleExportData = () => {
-    const allData = {
-      userData: localStorage.getItem("period_tracker_user_data"),
-      logs: localStorage.getItem("period_tracker_logs"),
-      symptomLogs: localStorage.getItem("period_tracker_symptom_logs"),
-      exportDate: new Date().toISOString(),
+  const handleExportData = async () => {
+    if (!user) return
+
+    try {
+      const allData = await exportUserData(user.uid)
+      const dataStr = JSON.stringify(allData, null, 2)
+      const dataBlob = new Blob([dataStr], { type: "application/json" })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `controlciclo-data-${new Date().toISOString().split("T")[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Datos exportados",
+        description: "Tus datos se han descargado como un archivo JSON.",
+      })
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron exportar los datos. Inténtalo de nuevo.",
+        variant: "destructive",
+      })
     }
+  }
 
-    const dataStr = JSON.stringify(allData, null, 2)
-    const dataBlob = new Blob([dataStr], { type: "application/json" })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `cycle-tracker-data-${new Date().toISOString().split("T")[0]}.json`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-
-    toast({
-      title: "Datos exportados",
-      description: "Tus datos se han descargado como un archivo JSON.",
-    })
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión exitosamente.",
+      })
+    } catch (error) {
+      console.error('Error signing out:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo cerrar la sesión. Inténtalo de nuevo.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -183,9 +246,18 @@ export function SettingsView({ onClose }: SettingsViewProps) {
               <p className="text-xs text-muted-foreground">Rango típico: 2-10 días</p>
             </div>
 
-            <Button onClick={handleSaveSettings} className="w-full sm:w-auto">
-              <Save className="mr-2 h-4 w-4" />
-              Guardar Cambios
+            <Button onClick={handleSaveSettings} disabled={isSaving} className="w-full sm:w-auto">
+              {isSaving ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Guardar Cambios
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -215,6 +287,11 @@ export function SettingsView({ onClose }: SettingsViewProps) {
               <Button onClick={handleExportData} variant="outline" className="w-full bg-transparent">
                 <Save className="mr-2 h-4 w-4" />
                 Exportar Mis Datos
+              </Button>
+
+              <Button onClick={handleSignOut} variant="outline" className="w-full bg-transparent">
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar Sesión
               </Button>
 
               <AlertDialog>

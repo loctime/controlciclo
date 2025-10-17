@@ -9,13 +9,14 @@ import { SymptomLogModal, type SymptomLog } from "@/components/symptom-log-modal
 import { StatisticsView } from "@/components/statistics-view"
 import { SettingsView } from "@/components/settings-view"
 import { useToast } from "@/hooks/use-toast"
-
-interface UserData {
-  cycleLength: number
-  periodLength: number
-  lastPeriodDate: string
-  setupDate: string
-}
+import { useAuth } from "./auth-provider"
+import { 
+  subscribeToUserData, 
+  subscribeToSymptomLogs, 
+  saveSymptomLog,
+  type UserData,
+  type SymptomLog as FirestoreSymptomLog
+} from "@/lib/firestore-service"
 
 interface PeriodLog {
   startDate: string
@@ -24,34 +25,36 @@ interface PeriodLog {
 }
 
 export function CalendarView() {
+  const { user } = useAuth()
+  const { toast } = useToast()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [userData, setUserData] = useState<UserData | null>(null)
   const [periodLogs, setPeriodLogs] = useState<PeriodLog[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [symptomModalOpen, setSymptomModalOpen] = useState(false)
-  const [symptomLogsState, setSymptomLogsState] = useState<SymptomLog[]>([])
+  const [symptomLogsState, setSymptomLogsState] = useState<FirestoreSymptomLog[]>([])
   const [showStatistics, setShowStatistics] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const { toast } = useToast()
 
   useEffect(() => {
-    // Load user data
-    const data = localStorage.getItem("period_tracker_user_data")
-    if (data) {
-      setUserData(JSON.parse(data))
-    }
+    if (!user) return
 
-    // Load period logs
-    const logs = localStorage.getItem("period_tracker_logs")
-    if (logs) {
-      setPeriodLogs(JSON.parse(logs))
-    }
+    // Subscribe to user data changes
+    const unsubscribeUserData = subscribeToUserData(user.uid, (data) => {
+      setUserData(data)
+    })
 
-    const symptomData = localStorage.getItem("period_tracker_symptom_logs")
-    if (symptomData) {
-      setSymptomLogsState(JSON.parse(symptomData))
+    // Subscribe to symptom logs changes
+    const unsubscribeSymptomLogs = subscribeToSymptomLogs(user.uid, (logs) => {
+      setSymptomLogsState(logs)
+    })
+
+    // Cleanup subscriptions
+    return () => {
+      unsubscribeUserData()
+      unsubscribeSymptomLogs()
     }
-  }, [showSettings])
+  }, [user])
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
@@ -228,15 +231,30 @@ export function CalendarView() {
 
   const daysUntilNext = getDaysUntilNextPeriod()
 
-  const handleSaveSymptomLog = (log: SymptomLog) => {
-    const updatedLogs = [...symptomLogsState, log]
-    setSymptomLogsState(updatedLogs)
-    localStorage.setItem("period_tracker_symptom_logs", JSON.stringify(updatedLogs))
+  const handleSaveSymptomLog = async (log: SymptomLog) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "No hay usuario autenticado",
+        variant: "destructive",
+      })
+      return
+    }
 
-    toast({
-      title: "Síntomas registrados",
-      description: "Tus síntomas se han guardado exitosamente.",
-    })
+    try {
+      await saveSymptomLog(user.uid, log)
+      toast({
+        title: "Síntomas registrados",
+        description: "Tus síntomas se han guardado exitosamente.",
+      })
+    } catch (error) {
+      console.error('Error saving symptom log:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el registro. Inténtalo de nuevo.",
+        variant: "destructive",
+      })
+    }
   }
 
   if (showStatistics) {

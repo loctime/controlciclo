@@ -4,34 +4,45 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { X, Calendar, TrendingUp, Activity, Heart, Droplets } from "lucide-react"
-import type { SymptomLog } from "@/components/symptom-log-modal"
-
-interface UserData {
-  cycleLength: number
-  periodLength: number
-  lastPeriodDate: string
-  setupDate: string
-}
+import { useAuth } from "./auth-provider"
+import { 
+  getUserData, 
+  getSymptomLogs,
+  type UserData,
+  type SymptomLog 
+} from "@/lib/firestore-service"
 
 interface StatisticsViewProps {
   onClose: () => void
 }
 
 export function StatisticsView({ onClose }: StatisticsViewProps) {
+  const { user } = useAuth()
   const [userData, setUserData] = useState<UserData | null>(null)
   const [symptomLogs, setSymptomLogs] = useState<SymptomLog[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const data = localStorage.getItem("period_tracker_user_data")
-    if (data) {
-      setUserData(JSON.parse(data))
+    const loadData = async () => {
+      if (!user) return
+
+      try {
+        const [userDataResult, symptomLogsResult] = await Promise.all([
+          getUserData(user.uid),
+          getSymptomLogs(user.uid)
+        ])
+
+        setUserData(userDataResult)
+        setSymptomLogs(symptomLogsResult)
+      } catch (error) {
+        console.error('Error loading statistics data:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    const logs = localStorage.getItem("period_tracker_symptom_logs")
-    if (logs) {
-      setSymptomLogs(JSON.parse(logs))
-    }
-  }, [])
+    loadData()
+  }, [user])
 
   const getNextPeriodDate = (): Date | null => {
     if (!userData) return null
